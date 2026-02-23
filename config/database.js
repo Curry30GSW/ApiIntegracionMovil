@@ -1,25 +1,25 @@
-const { Pool } = require('pg');
-require('dotenv').config();
+// const { Pool } = require('pg');
+// require('dotenv').config();
 
-const pool = new Pool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: 5432,
-    ssl: {
-        rejectUnauthorized: false // Importante para Supabase
-    }
-});
+// const pool = new Pool({
+//     host: process.env.DB_HOST,
+//     user: process.env.DB_USER,
+//     password: process.env.DB_PASSWORD,
+//     database: process.env.DB_NAME,
+//     port: 5432,
+//     ssl: {
+//         rejectUnauthorized: false // Importante para Supabase
+//     }
+// });
 
-// Probar la conexión
-pool.connect((err, client, release) => {
-    if (err) {
-        console.error('Error conectando a Supabase:', err.stack);
-    } else {
-        console.log('Conectado a Supabase exitosamente');
-        release();
-    }
-});
+// // Probar la conexión
+// pool.connect((err, client, release) => {
+//     if (err) {
+//         console.error('Error conectando a Supabase:', err.stack);
+//     } else {
+//         console.log('Conectado a Supabase exitosamente');
+//         release();
+//     }
+// });
 
-module.exports = pool;
+// module.exports = pool;

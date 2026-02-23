@@ -1,6 +1,6 @@
-const Credito = require('../models/Credito');
-const Cliente = require('../models/Cliente');
-const Cobrador = require('../models/Cobrador');
+const Credito = require('../models/CreditoModel');
+const Cliente = require('../models/ClienteModel');
+const Cobrador = require('../models/CobradorModel');
 
 exports.crearCredito = async (req, res) => {
     try {
@@ -14,13 +14,13 @@ exports.crearCredito = async (req, res) => {
         // Verificar que el cliente existe
         const cliente = await Cliente.obtenerPorId(id_cliente);
         if (!cliente) {
-            return res.status(404).json({ error: 'El cliente no existe' });
+            return res.status(404).json({ error: 'El cliente no existe o está inactivo' });
         }
 
         // Verificar que el cobrador existe
         const cobrador = await Cobrador.obtenerPorId(id_cobrador);
         if (!cobrador) {
-            return res.status(404).json({ error: 'El cobrador no existe' });
+            return res.status(404).json({ error: 'El cobrador no existe o está inactivo' });
         }
 
         const id = await Credito.crear({
@@ -53,5 +53,26 @@ exports.creditosPorCliente = async (req, res) => {
         res.json(creditos);
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+};
+
+
+exports.obtenerTodos = async (req, res) => {
+    try {
+        const creditos = await Credito.obtenerTodos();
+
+        return res.status(200).json({
+            ok: true,
+            total: creditos.length,
+            data: creditos
+        });
+
+    } catch (error) {
+        console.error('Error obteniendo créditos:', error);
+
+        return res.status(500).json({
+            ok: false,
+            message: 'Error interno del servidor'
+        });
     }
 };
