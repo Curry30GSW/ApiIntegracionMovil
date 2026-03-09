@@ -66,6 +66,48 @@ class Credito {
         const [rows] = await db.query(query, [id]);
         return rows[0];
     }
+
+    static async obtenerPorCobradorConDetalles(id_cobrador) {
+        const query = `
+        SELECT 
+            cr.*,
+            cl.nombre as cliente_nombre,
+            cl.apellidos as cliente_apellidos,
+            cl.cedula as cliente_cedula,
+            cl.celular as cliente_celular,
+            cl.direccion as cliente_direccion,
+            cob.nombre as cobrador_nombre,
+            cob.apellidos as cobrador_apellidos
+        FROM creditos cr
+        INNER JOIN clientes cl ON cr.id_cliente = cl.id_cliente
+        INNER JOIN cobradores cob ON cr.id_cobrador = cob.id_cobrador
+        WHERE cr.id_cobrador = ?
+        ORDER BY cr.fecha_credito DESC
+    `;
+
+        const [rows] = await db.query(query, [id_cobrador]);
+        return rows;
+    }
+
+    static async obtenerEstadisticasPorCobrador(id_cobrador) {
+        const query = `
+        SELECT 
+            COUNT(DISTINCT cr.id_credito) as total_creditos,
+            COUNT(DISTINCT cl.id_cliente) as total_clientes,
+            SUM(CASE WHEN cr.estado = 'pendiente' THEN 1 ELSE 0 END) as creditos_pendientes,
+            SUM(CASE WHEN cr.estado = 'pagado' THEN 1 ELSE 0 END) as creditos_pagados,
+            SUM(CASE WHEN cr.estado = 'vencido' THEN 1 ELSE 0 END) as creditos_vencidos,
+            COALESCE(SUM(cr.monto_prestado), 0) as total_prestado,
+            COALESCE(SUM(CASE WHEN cr.estado != 'pagado' THEN cr.monto_por_pagar ELSE 0 END), 0) as total_por_cobrar,
+            COALESCE(SUM(CASE WHEN cr.estado = 'pagado' THEN cr.monto_por_pagar ELSE 0 END), 0) as total_cobrado
+        FROM creditos cr
+        INNER JOIN clientes cl ON cr.id_cliente = cl.id_cliente
+        WHERE cr.id_cobrador = ?
+    `;
+
+        const [rows] = await db.query(query, [id_cobrador]);
+        return rows[0];
+    }
 }
 
 module.exports = Credito;

@@ -209,3 +209,4 @@ exports.obtenerEstadisticas = async (req, res) => {
         });
     }
 };
+

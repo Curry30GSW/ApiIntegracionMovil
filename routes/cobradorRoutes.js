@@ -5,6 +5,10 @@ const cobradorController = require('../controllers/cobradorController');
 // Obtener todos los cobradores
 router.get('/', cobradorController.obtenerCobradores);
 
+// Reactivar cobrador
+router.patch('/:id/reactivar', cobradorController.reactivarCobrador);
+
+
 // Obtener un cobrador por ID
 router.get('/:id', cobradorController.obtenerCobradorPorId);
 

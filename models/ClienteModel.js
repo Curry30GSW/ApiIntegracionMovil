@@ -3,7 +3,7 @@ const db = require('../config/mysql');
 class Cliente {
     static async crear(clienteData) {
         const { cedula, nombre, apellidos, direccion, celular, id_cobrador } = clienteData;
-        const query = 'INSERT INTO clientes (cedula, nombre, apellidos, direccion, celular, id_cobrador) VALUES (?, ?, ?, ?, ?, ?)';
+        const query = 'INSERT INTO clientes (cedula, nombre, apellidos, direccion, celular, id_cobrador, activo) VALUES (?, ?, ?, ?, ?, ?, 1)';
         const values = [cedula, nombre, apellidos, direccion, celular, id_cobrador];
 
         try {
