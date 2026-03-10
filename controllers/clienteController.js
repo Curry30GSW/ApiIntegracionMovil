@@ -3,38 +3,59 @@ const Cobrador = require('../models/CobradorModel');
 
 exports.crearCliente = async (req, res) => {
     try {
+
+        const id_sede = req.id_sede;
+
         const { cedula, nombre, apellidos, direccion, celular, id_cobrador } = req.body;
 
-        // Validaciones
         if (!cedula || !nombre || !apellidos || !celular || !id_cobrador) {
             return res.status(400).json({ error: 'Faltan campos requeridos' });
         }
 
-        // Verificar que el cobrador existe
-        const cobrador = await Cobrador.obtenerPorId(id_cobrador);
+        const cobrador = await Cobrador.obtenerPorId(id_cobrador, id_sede);
         if (!cobrador) {
             return res.status(404).json({ error: 'El cobrador no existe' });
         }
 
-        const id = await Cliente.crear({ cedula, nombre, apellidos, direccion, celular, id_cobrador });
-        res.status(201).json({ message: 'Cliente creado exitosamente', id });
+        const id = await Cliente.crear({
+            cedula,
+            nombre,
+            apellidos,
+            direccion,
+            celular,
+            id_cobrador,
+            id_sede
+        });
+
+        res.status(201).json({
+            message: 'Cliente creado exitosamente',
+            id
+        });
+
     } catch (error) {
+
         if (error.code === 'ER_DUP_ENTRY') {
             res.status(400).json({ error: 'La cédula ya está registrada' });
         } else {
             res.status(500).json({ error: error.message });
         }
+
     }
 };
 
 exports.obtenerClientes = async (req, res) => {
     try {
-        const clientes = await Cliente.obtenerTodos();
+
+        const id_sede = req.id_sede;
+
+        const clientes = await Cliente.obtenerTodos(id_sede);
+
         res.json({
             ok: true,
             total: clientes.length,
             data: clientes
         });
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -42,19 +63,22 @@ exports.obtenerClientes = async (req, res) => {
 
 exports.obtenerClientePorId = async (req, res) => {
     try {
+
         const { id } = req.params;
-        const cliente = await Cliente.obtenerPorId(id);
+        const id_sede = req.id_sede;
+
+        const cliente = await Cliente.obtenerPorId(id, id_sede);
 
         if (!cliente) {
             return res.status(404).json({ error: 'Cliente no encontrado' });
         }
 
         res.json(cliente);
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
-
 exports.actualizarCliente = async (req, res) => {
     try {
         const { id } = req.params;
@@ -102,16 +126,19 @@ exports.eliminarCliente = async (req, res) => {
 
 exports.clientesPorCobrador = async (req, res) => {
     try {
-        const { id_cobrador } = req.params;
 
-        // Verificar que el cobrador existe
+        const { id_cobrador } = req.params;
+        const id_sede = req.id_sede;
+
         const cobrador = await Cobrador.obtenerPorId(id_cobrador);
         if (!cobrador) {
             return res.status(404).json({ error: 'Cobrador no encontrado' });
         }
 
-        const clientes = await Cliente.obtenerPorCobrador(id_cobrador);
+        const clientes = await Cliente.obtenerPorCobrador(id_cobrador, id_sede);
+
         res.json(clientes);
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

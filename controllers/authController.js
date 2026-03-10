@@ -1,75 +1,90 @@
 const Usuario = require('../models/usuarioModel');
 
 const authController = {
-    // Mostrar formulario de login
-    showLoginForm: (req, res) => {
-        res.render('login', { error: null });
-    },
 
-    // Procesar login
     login: async (req, res) => {
         try {
+
             const { usuario, contraseña } = req.body;
 
-            // Validar que no estén vacíos
             if (!usuario || !contraseña) {
-                return res.render('login', {
-                    error: 'Usuario y contraseña son requeridos'
+                return res.status(400).json({
+                    success: false,
+                    message: "Usuario y contraseña requeridos"
                 });
             }
 
-            // Buscar usuario en la base de datos
             const user = await Usuario.findByUsername(usuario);
 
             if (!user) {
-                return res.render('login', {
-                    error: 'Usuario o contraseña incorrectos'
+                return res.status(401).json({
+                    success: false,
+                    message: "Usuario o contraseña incorrectos"
                 });
             }
 
-            // Verificar contraseña
-            const validPassword = await Usuario.comparePassword(contraseña, user.contraseña);
+            const validPassword = await Usuario.comparePassword(
+                contraseña,
+                user.contraseña
+            );
 
             if (!validPassword) {
-                return res.render('login', {
-                    error: 'Usuario o contraseña incorrectos'
+                return res.status(401).json({
+                    success: false,
+                    message: "Usuario o contraseña incorrectos"
                 });
             }
 
-            // Crear sesión
-            req.session.userId = user.id_usuario;
-            req.session.userName = user.nombre;
-            req.session.userRole = user.rol;
+             req.session.user = {
+                    id: user.id_usuario,
+                    nombre: user.nombre,
+                    rol: user.rol,
+                    sede: user.id_sede
+                };
 
-            res.redirect('/dashboard');
-
-        } catch (error) {
-            console.error('Error en login:', error);
-            res.render('login', {
-                error: 'Error en el servidor'
+            return res.json({
+                success: true,
+                user: {
+                    id: user.id_usuario,
+                    nombre: user.nombre,
+                    rol: user.rol,
+                    sede: user.id_sede
+                }
             });
-        }
-    },
 
-    // Dashboard
-    dashboard: async (req, res) => {
-        try {
-            const user = await Usuario.getById(req.session.userId);
-            res.render('dashboard', { user });
         } catch (error) {
-            console.error('Error en dashboard:', error);
-            res.redirect('/login');
+
+            console.error("Error login:", error);
+
+            return res.status(500).json({
+                success: false,
+                message: "Error en servidor"
+            });
+
         }
     },
 
-    // Logout
-    logout: (req, res) => {
-        req.session.destroy((err) => {
-            if (err) {
-                console.error('Error al cerrar sesión:', err);
-            }
-            res.redirect('/login');
+    dashboard: async (req, res) => {
+
+        const user = await Usuario.getById(req.session.userId);
+
+        res.json({
+            success: true,
+            user
         });
+
+    },
+
+    logout: (req, res) => {
+
+        req.session.destroy(() => {
+
+            res.json({
+                success: true
+            });
+
+        });
+
     }
 };
 

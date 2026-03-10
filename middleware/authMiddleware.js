@@ -1,29 +1,53 @@
 const authMiddleware = {
+
     // Verificar si el usuario está autenticado
     isAuthenticated: (req, res, next) => {
-        if (req.session.userId) {
-            return next();
-        }
-        res.redirect('/login');
-    },
 
-    // Verificar si es admin (ejemplo de rol)
-    isAdmin: (req, res, next) => {
-        if (req.session.userRole === 'admin') {
-            return next();
+        if (!req.session.user) {
+            return res.status(401).json({
+                success: false,
+                message: "No autenticado"
+            });
         }
-        res.status(403).render('error', {
-            message: 'Acceso denegado. Se requieren permisos de administrador.'
-        });
-    },
 
-    // Redirigir si ya está logueado
-    isLoggedIn: (req, res, next) => {
-        if (req.session.userId) {
-            return res.redirect('/dashboard');
-        }
         next();
-    }
+    },
+
+    // Verificar si es admin
+    isAdmin: (req, res, next) => {
+
+        if (!req.session.user) {
+            return res.status(401).json({
+                success: false,
+                message: "No autenticado"
+            });
+        }
+
+        if (req.session.user.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: "Acceso denegado"
+            });
+        }
+
+        next();
+    },
+
+    // Obtener sede del usuario
+    getSede: (req, res, next) => {
+
+        if (!req.session.user) {
+            return res.status(401).json({
+                success: false,
+                message: "No autenticado"
+            });
+        }
+
+        req.id_sede = req.session.user.sede;
+
+        next();
+    },
+
 };
 
 module.exports = authMiddleware;

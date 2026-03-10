@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const cobradorController = require('../controllers/cobradorController');
+const authMiddleware = require('../middleware/authMiddleware');
+
+// Middleware global
+router.use(authMiddleware.isAuthenticated);
+router.use(authMiddleware.getSede);
 
 // Obtener todos los cobradores
 router.get('/', cobradorController.obtenerCobradores);
