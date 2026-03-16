@@ -10,7 +10,7 @@ class Usuario {
                  FROM usuarios u
                  LEFT JOIN sedes s ON u.id_sede = s.id_sede
                  WHERE u.usuario = $1 AND u.activo = $2`,
-                [usuario, 1]
+                [usuario, 1]  // ✅ 1 = activo
             );
 
             return result.rows[0];
@@ -61,9 +61,10 @@ class Usuario {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(contraseña, salt);
 
+            // ✅ CORREGIDO: true → 1
             const result = await db.query(
                 'INSERT INTO usuarios (usuario, contraseña, nombre, rol, id_sede, activo) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_usuario',
-                [usuario, hashedPassword, nombre, rol, id_sede, true]
+                [usuario, hashedPassword, nombre, rol, id_sede, 1]  // ← 1 en lugar de true
             );
 
             return result.rows[0].id_usuario;
@@ -80,7 +81,6 @@ class Usuario {
             let query, values;
 
             if (contraseña) {
-                // Si hay nueva contraseña
                 const salt = await bcrypt.genSalt(10);
                 const hashedPassword = await bcrypt.hash(contraseña, salt);
 
@@ -90,7 +90,6 @@ class Usuario {
                         RETURNING id_usuario`;
                 values = [usuario, hashedPassword, nombre, rol, id_sede, id];
             } else {
-                // Sin cambiar contraseña
                 query = `UPDATE usuarios 
                         SET usuario = $1, nombre = $2, rol = $3, id_sede = $4 
                         WHERE id_usuario = $5
@@ -108,9 +107,10 @@ class Usuario {
     // Eliminar (desactivar) usuario
     static async delete(id) {
         try {
+            // ✅ CORREGIDO: false → 0, true → 1
             const result = await db.query(
                 'UPDATE usuarios SET activo = $1 WHERE id_usuario = $2 AND activo = $3 RETURNING id_usuario',
-                [false, id, true]
+                [0, id, 1]  // ← 0 para desactivar, 1 para buscar activo
             );
             return result.rowCount > 0;
         } catch (error) {
@@ -121,9 +121,10 @@ class Usuario {
     // Reactivar usuario
     static async activate(id) {
         try {
+            // ✅ CORREGIDO: true → 1, false → 0
             const result = await db.query(
                 'UPDATE usuarios SET activo = $1 WHERE id_usuario = $2 AND activo = $3 RETURNING id_usuario',
-                [true, id, false]
+                [1, id, 0]  // ← 1 para activar, 0 para buscar inactivo
             );
             return result.rowCount > 0;
         } catch (error) {

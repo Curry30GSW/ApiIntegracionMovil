@@ -171,7 +171,7 @@ const usuarioController = {
             }
 
             // No permitir eliminarse a sí mismo
-            if (usuario.id_usuario === req.session.user.id) {
+            if (usuario.id_usuario === req.user.id) {
                 return res.status(400).json({
                     success: false,
                     message: 'No puedes inhabilitar tu propio usuario'
