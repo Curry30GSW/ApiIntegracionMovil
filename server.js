@@ -43,13 +43,14 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(session({
    secret: process.env.SESSION_SECRET || "secreto123",
-   resave: false,
-   saveUninitialized: false,
+   resave: true,
+   saveUninitialized: true,
    cookie: {
       secure: true, // Siempre true en Vercel (HTTPS)
       httpOnly: true,
       sameSite: 'none', // Necesario para cross-site
-      maxAge: 1000 * 60 * 60 * 24
+      maxAge: 1000 * 60 * 60 * 24,
+      domain: '.vercel.app'
    },
    proxy: true // Necesario para Vercel
 }));
