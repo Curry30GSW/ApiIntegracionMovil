@@ -5,16 +5,19 @@ class Credito {
         const { fecha_credito, fecha_pago, monto_prestado, monto_por_pagar, id_cliente, id_cobrador, estado, id_sede } = creditoData;
 
         const query = `
-            INSERT INTO creditos (fecha_credito, fecha_pago, monto_prestado, monto_por_pagar, id_cliente, id_cobrador, estado, id_sede) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING id_credito
-        `;
+        INSERT INTO creditos 
+        (fecha_credito, fecha_pago, monto_prestado, monto_por_pagar, id_cliente, id_cobrador, estado, id_sede) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id_credito
+    `;
+
         const values = [fecha_credito, fecha_pago, monto_prestado, monto_por_pagar, id_cliente, id_cobrador, estado || 'pendiente', id_sede];
 
         try {
             const result = await db.query(query, values);
             return result.rows[0].id_credito;
         } catch (error) {
+            console.error('Error al crear crédito:', error);
             throw error;
         }
     }
