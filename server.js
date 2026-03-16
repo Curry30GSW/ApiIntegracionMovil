@@ -16,10 +16,16 @@ const PORT = process.env.PORT || 3000;
    CORS (ANTES DE LAS RUTAS)
 ========================= */
 
-app.use(cors({
-   origin: ['http://localhost:5173', 'https://tu-frontend.vercel.app'], // React (Vite)
+const corsOptions = {
+   origin: [
+      'https://gotagota-frontend.vercel.app',           // ← Producción (principal)
+      'https://gotagota-frontend-hs80dajn5-andres-currys-projects.vercel.app', // ← Preview actual
+      'https://gotagota-frontend-iwcvhenf4-andres-currys-projects.vercel.app', // ← Preview anterior
+      'http://localhost:5173',                           // ← Desarrollo local
+      'http://localhost:3000'                             // ← Desarrollo local alternativo
+   ],
    credentials: true
-}));
+};
 
 /* =========================
    BODY PARSER
