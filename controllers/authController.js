@@ -82,15 +82,12 @@ const authController = {
     },
 
     logout: (req, res) => {
-
-        req.session.destroy(() => {
-
-            res.json({
-                success: true
-            });
-
+        // ✅ Con JWT, el logout es inmediato
+        // El frontend eliminará el token, el backend solo confirma
+        res.json({
+            success: true,
+            message: "Sesión cerrada exitosamente"
         });
-
     }
 };
 
