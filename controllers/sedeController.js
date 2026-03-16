@@ -5,7 +5,7 @@ const sedeController = {
     getAll: async (req, res) => {
         try {
             const sedes = await Sede.getAll();
-            
+
             res.json({
                 success: true,
                 data: sedes
@@ -22,16 +22,9 @@ const sedeController = {
     // Obtener todas las sedes (admin)
     getAllAdmin: async (req, res) => {
         try {
-            // Solo admin puede ver todas (incluyendo inactivas)
-            if (req.session.user.rol !== 'admin') {
-                return res.status(403).json({
-                    success: false,
-                    message: 'Acceso denegado'
-                });
-            }
 
             const sedes = await Sede.getAllAdmin();
-            
+
             res.json({
                 success: true,
                 data: sedes
@@ -50,7 +43,7 @@ const sedeController = {
         try {
             const { id } = req.params;
             const sede = await Sede.getById(id);
-            
+
             if (!sede) {
                 return res.status(404).json({
                     success: false,

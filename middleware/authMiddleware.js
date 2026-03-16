@@ -2,20 +2,17 @@ const authMiddleware = {
 
     // Verificar si el usuario está autenticado
     isAuthenticated: (req, res, next) => {
-
         if (!req.session.user) {
             return res.status(401).json({
                 success: false,
                 message: "No autenticado"
             });
         }
-
         next();
     },
 
-    // Verificar si es admin
+    // Verificar si es admin - CORREGIDO
     isAdmin: (req, res, next) => {
-
         if (!req.session.user) {
             return res.status(401).json({
                 success: false,
@@ -23,7 +20,7 @@ const authMiddleware = {
             });
         }
 
-        if (req.session.user.role !== 'admin') {
+        if (req.session.user.rol !== 'admin') {
             return res.status(403).json({
                 success: false,
                 message: "Acceso denegado"
@@ -35,7 +32,6 @@ const authMiddleware = {
 
     // Obtener sede del usuario
     getSede: (req, res, next) => {
-
         if (!req.session.user) {
             return res.status(401).json({
                 success: false,
@@ -44,10 +40,8 @@ const authMiddleware = {
         }
 
         req.id_sede = req.session.user.sede;
-
         next();
     },
-
 };
 
 module.exports = authMiddleware;
