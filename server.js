@@ -17,8 +17,8 @@ const PORT = process.env.PORT || 3000;
 ========================= */
 
 app.use(cors({
-    origin: 'http://localhost:5173', // React (Vite)
-    credentials: true
+   origin: ['http://localhost:5173', 'https://tu-frontend.vercel.app'], // React (Vite)
+   credentials: true
 }));
 
 /* =========================
@@ -33,15 +33,15 @@ app.use(express.urlencoded({ extended: true }));
 ========================= */
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || "secreto123",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: false, // true solo si usas https
-        httpOnly: true,
-        sameSite: "lax",
-        maxAge: 1000 * 60 * 60 * 24 // 24 horas
-    }
+   secret: process.env.SESSION_SECRET || "secreto123",
+   resave: false,
+   saveUninitialized: false,
+   cookie: {
+      secure: false, // true solo si usas https
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 24 // 24 horas
+   }
 }));
 
 /* =========================
@@ -58,7 +58,7 @@ app.use('/api/sedes', sedeRoutes);
 ========================= */
 
 app.get('/', (req, res) => {
-    res.json({ message: 'API de Cobradores funcionando' });
+   res.json({ message: 'API de Cobradores funcionando' });
 });
 
 /* =========================
@@ -66,7 +66,7 @@ app.get('/', (req, res) => {
 ========================= */
 
 app.use((req, res) => {
-    res.status(404).json({ error: 'Ruta no encontrada' });
+   res.status(404).json({ error: 'Ruta no encontrada' });
 });
 
 /* =========================
@@ -74,7 +74,7 @@ app.use((req, res) => {
 ========================= */
 
 app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
 
 module.exports = app;
