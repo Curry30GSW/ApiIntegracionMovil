@@ -1,17 +1,19 @@
-const db = require('../config/mysql');
+const db = require('../config/database');
 
 class Credito {
     static async crear(creditoData) {
         const { fecha_credito, fecha_pago, monto_prestado, monto_por_pagar, id_cliente, id_cobrador, estado, id_sede } = creditoData;
+
         const query = `
             INSERT INTO creditos (fecha_credito, fecha_pago, monto_prestado, monto_por_pagar, id_cliente, id_cobrador, estado, id_sede) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING id_credito
         `;
         const values = [fecha_credito, fecha_pago, monto_prestado, monto_por_pagar, id_cliente, id_cobrador, estado || 'pendiente', id_sede];
 
         try {
-            const [result] = await db.query(query, values);
-            return result.insertId;
+            const result = await db.query(query, values);
+            return result.rows[0].id_credito;
         } catch (error) {
             throw error;
         }
@@ -32,11 +34,11 @@ class Credito {
             FROM creditos cr 
             INNER JOIN clientes cl ON cr.id_cliente = cl.id_cliente 
             INNER JOIN cobradores cob ON cr.id_cobrador = cob.id_cobrador 
-            WHERE cr.id_cliente = ? AND cr.id_sede = ?
+            WHERE cr.id_cliente = $1 AND cr.id_sede = $2
             ORDER BY cr.fecha_credito DESC
         `;
-        const [rows] = await db.query(query, [id_cliente, id_sede]);
-        return rows;
+        const result = await db.query(query, [id_cliente, id_sede]);
+        return result.rows;
     }
 
     static async obtenerPorCobrador(id_cobrador, id_sede) {
@@ -49,11 +51,11 @@ class Credito {
                    cl.direccion as cliente_direccion
             FROM creditos cr 
             INNER JOIN clientes cl ON cr.id_cliente = cl.id_cliente 
-            WHERE cr.id_cobrador = ? AND cr.id_sede = ?
+            WHERE cr.id_cobrador = $1 AND cr.id_sede = $2
             ORDER BY cr.fecha_credito DESC
         `;
-        const [rows] = await db.query(query, [id_cobrador, id_sede]);
-        return rows;
+        const result = await db.query(query, [id_cobrador, id_sede]);
+        return result.rows;
     }
 
     static async obtenerTodos(id_sede) {
@@ -71,23 +73,23 @@ class Credito {
             FROM creditos cr 
             INNER JOIN clientes cl ON cr.id_cliente = cl.id_cliente 
             INNER JOIN cobradores cob ON cr.id_cobrador = cob.id_cobrador 
-            WHERE cr.id_sede = ?
+            WHERE cr.id_sede = $1
             ORDER BY cr.fecha_credito DESC
         `;
-        const [rows] = await db.query(query, [id_sede]);
-        return rows;
+        const result = await db.query(query, [id_sede]);
+        return result.rows;
     }
 
     static async actualizarEstado(id_credito, estado) {
-        const query = 'UPDATE creditos SET estado = ? WHERE id_credito = ?';
-        await db.query(query, [estado, id_credito]);
-        return true;
+        const query = 'UPDATE creditos SET estado = $1 WHERE id_credito = $2 RETURNING id_credito';
+        const result = await db.query(query, [estado, id_credito]);
+        return result.rowCount > 0;
     }
 
     static async obtenerPorId(id, id_sede) {
-        const query = 'SELECT * FROM creditos WHERE id_credito = ? AND id_sede = ?';
-        const [rows] = await db.query(query, [id, id_sede]);
-        return rows[0];
+        const query = 'SELECT * FROM creditos WHERE id_credito = $1 AND id_sede = $2';
+        const result = await db.query(query, [id, id_sede]);
+        return result.rows[0];
     }
 
     static async obtenerPorCobradorConDetalles(id_cobrador, id_sede) {
@@ -103,11 +105,11 @@ class Credito {
                 cob.apellidos as cobrador_apellidos,
                 cob.cedula as cobrador_cedula,
                 cob.celular as cobrador_celular,
-                DATEDIFF(CURDATE(), cr.fecha_pago) as dias_vencidos
+                CURRENT_DATE - cr.fecha_pago as dias_vencidos
             FROM creditos cr
             INNER JOIN clientes cl ON cr.id_cliente = cl.id_cliente
             INNER JOIN cobradores cob ON cr.id_cobrador = cob.id_cobrador
-            WHERE cr.id_cobrador = ? AND cr.id_sede = ?
+            WHERE cr.id_cobrador = $1 AND cr.id_sede = $2
             ORDER BY 
                 CASE cr.estado
                     WHEN 'vencido' THEN 1
@@ -116,8 +118,8 @@ class Credito {
                 END,
                 cr.fecha_credito DESC
         `;
-        const [rows] = await db.query(query, [id_cobrador, id_sede]);
-        return rows;
+        const result = await db.query(query, [id_cobrador, id_sede]);
+        return result.rows;
     }
 
     static async obtenerEstadisticasPorCobrador(id_cobrador, id_sede) {
@@ -137,13 +139,12 @@ class Credito {
                 MIN(cr.fecha_credito) as primer_credito
             FROM creditos cr
             INNER JOIN clientes cl ON cr.id_cliente = cl.id_cliente
-            WHERE cr.id_cobrador = ? AND cr.id_sede = ?
+            WHERE cr.id_cobrador = $1 AND cr.id_sede = $2
         `;
-        const [rows] = await db.query(query, [id_cobrador, id_sede]);
-        return rows[0];
+        const result = await db.query(query, [id_cobrador, id_sede]);
+        return result.rows[0];
     }
 
-    // Método adicional: Obtener créditos por estado
     static async obtenerPorEstado(estado, id_sede) {
         const query = `
             SELECT cr.*, 
@@ -156,18 +157,17 @@ class Credito {
             FROM creditos cr
             INNER JOIN clientes cl ON cr.id_cliente = cl.id_cliente
             INNER JOIN cobradores cob ON cr.id_cobrador = cob.id_cobrador
-            WHERE cr.estado = ? AND cr.id_sede = ?
+            WHERE cr.estado = $1 AND cr.id_sede = $2
             ORDER BY 
                 CASE 
-                    WHEN ? = 'vencido' THEN cr.fecha_pago
+                    WHEN $1 = 'vencido' THEN cr.fecha_pago
                     ELSE cr.fecha_credito
                 END DESC
         `;
-        const [rows] = await db.query(query, [estado, id_sede, estado]);
-        return rows;
+        const result = await db.query(query, [estado, id_sede]);
+        return result.rows;
     }
 
-    // Método adicional: Obtener créditos vencidos
     static async obtenerVencidos(id_sede) {
         const query = `
             SELECT cr.*, 
@@ -179,20 +179,19 @@ class Credito {
                    cob.nombre as cobrador_nombre,
                    cob.apellidos as cobrador_apellidos,
                    cob.celular as cobrador_celular,
-                   DATEDIFF(CURDATE(), cr.fecha_pago) as dias_vencidos
+                   CURRENT_DATE - cr.fecha_pago as dias_vencidos
             FROM creditos cr
             INNER JOIN clientes cl ON cr.id_cliente = cl.id_cliente
             INNER JOIN cobradores cob ON cr.id_cobrador = cob.id_cobrador
             WHERE cr.estado = 'pendiente' 
-              AND cr.fecha_pago < CURDATE() 
-              AND cr.id_sede = ?
+              AND cr.fecha_pago < CURRENT_DATE 
+              AND cr.id_sede = $1
             ORDER BY cr.fecha_pago ASC
         `;
-        const [rows] = await db.query(query, [id_sede]);
-        return rows;
+        const result = await db.query(query, [id_sede]);
+        return result.rows;
     }
 
-    // Método adicional: Obtener resumen de créditos por sede
     static async obtenerResumen(id_sede) {
         const query = `
             SELECT 
@@ -206,13 +205,12 @@ class Credito {
                 COUNT(DISTINCT id_cliente) as total_clientes_con_credito,
                 COUNT(DISTINCT id_cobrador) as total_cobradores_activos
             FROM creditos
-            WHERE id_sede = ?
+            WHERE id_sede = $1
         `;
-        const [rows] = await db.query(query, [id_sede]);
-        return rows[0];
+        const result = await db.query(query, [id_sede]);
+        return result.rows[0];
     }
 
-    // Método adicional: Obtener créditos por rango de fechas
     static async obtenerPorRangoFechas(fecha_inicio, fecha_fin, id_sede) {
         const query = `
             SELECT cr.*, 
@@ -224,12 +222,12 @@ class Credito {
             FROM creditos cr
             INNER JOIN clientes cl ON cr.id_cliente = cl.id_cliente
             INNER JOIN cobradores cob ON cr.id_cobrador = cob.id_cobrador
-            WHERE cr.fecha_credito BETWEEN ? AND ? 
-              AND cr.id_sede = ?
+            WHERE cr.fecha_credito BETWEEN $1 AND $2 
+              AND cr.id_sede = $3
             ORDER BY cr.fecha_credito DESC
         `;
-        const [rows] = await db.query(query, [fecha_inicio, fecha_fin, id_sede]);
-        return rows;
+        const result = await db.query(query, [fecha_inicio, fecha_fin, id_sede]);
+        return result.rows;
     }
 }
 

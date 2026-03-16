@@ -1,7 +1,7 @@
 const Credito = require('../models/CreditoModel');
 const Cliente = require('../models/ClienteModel');
 const Cobrador = require('../models/CobradorModel');
-const db = require('../config/mysql');
+const db = require('../config/database');
 
 exports.crearCredito = async (req, res) => {
     try {
@@ -36,9 +36,9 @@ exports.crearCredito = async (req, res) => {
             id_sede
         });
 
-        res.status(201).json({ 
-            message: 'Crédito creado exitosamente', 
-            id 
+        res.status(201).json({
+            message: 'Crédito creado exitosamente',
+            id
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -136,9 +136,8 @@ exports.pagarCreditoConFecha = async (req, res) => {
     try {
         const { id } = req.params;
         const id_sede = req.id_sede;
-        const { fecha_pago } = req.body; // Fecha de pago actual (opcional, usaría la actual por defecto)
+        const { fecha_pago } = req.body;
 
-        // Validar que el id existe
         if (!id) {
             return res.status(400).json({
                 ok: false,
@@ -156,7 +155,6 @@ exports.pagarCreditoConFecha = async (req, res) => {
             });
         }
 
-        // Verificar que el crédito no esté ya pagado
         if (credito.estado === 'pagado') {
             return res.status(400).json({
                 ok: false,
@@ -164,15 +162,13 @@ exports.pagarCreditoConFecha = async (req, res) => {
             });
         }
 
-        const query = 'UPDATE creditos SET estado = ?, fecha_pago = ? WHERE id_credito = ?';
-        const fechaActual = fecha_pago || new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
-
-        await db.query(query, ['pagado', fechaActual, id]);
+        // Usar el método del modelo en lugar de consulta directa
+        await Credito.actualizarEstado(id, 'pagado');
 
         return res.status(200).json({
             ok: true,
             message: 'Crédito pagado exitosamente',
-            fecha_pago: fechaActual
+            fecha_pago: fecha_pago || new Date().toISOString().split('T')[0]
         });
 
     } catch (error) {

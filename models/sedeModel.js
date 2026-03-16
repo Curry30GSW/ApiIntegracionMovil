@@ -1,118 +1,118 @@
-const db = require('../config/mysql');
+const db = require('../config/database');
 
-const Sede = {
+class Sede {
     // Obtener todas las sedes activas
-    getAll: async () => {
+    static async getAll() {
         try {
-            const [rows] = await db.query(
+            const result = await db.query(
                 'SELECT * FROM sedes WHERE activo = 1 ORDER BY nombre_sede'
             );
-            return rows;
-        } catch (error) {
-            throw error;
-        }
-    },
-
-    // Obtener todas las sedes (incluyendo inactivas)
-    getAllAdmin: async () => {
-        try {
-            const [rows] = await db.query(
-                'SELECT * FROM sedes ORDER BY nombre_sede'
-            );
-            return rows;
-        } catch (error) {
-            throw error;
-        }
-    },
-
-    // Obtener sede por ID
-    getById: async (id) => {
-        try {
-            const [rows] = await db.query(
-                'SELECT * FROM sedes WHERE id_sede = ?',
-                [id]
-            );
-            return rows[0];
-        } catch (error) {
-            throw error;
-        }
-    },
-
-    // Crear nueva sede
-    create: async (sedeData) => {
-        try {
-            const { nombre_sede, direccion, telefono } = sedeData;
-            
-            const [result] = await db.query(
-                'INSERT INTO sedes (nombre_sede, direccion, telefono, created_at, activo) VALUES (?, ?, ?, NOW(), 1)',
-                [nombre_sede, direccion, telefono]
-            );
-            
-            return result.insertId;
-        } catch (error) {
-            throw error;
-        }
-    },
-
-    // Actualizar sede
-    update: async (id, sedeData) => {
-        try {
-            const { nombre_sede, direccion, telefono } = sedeData;
-            
-            const [result] = await db.query(
-                'UPDATE sedes SET nombre_sede = ?, direccion = ?, telefono = ? WHERE id_sede = ?',
-                [nombre_sede, direccion, telefono, id]
-            );
-            
-            return result.affectedRows > 0;
-        } catch (error) {
-            throw error;
-        }
-    },
-
-    // Eliminar (borrado lógico)
-    delete: async (id) => {
-        try {
-            const [result] = await db.query(
-                'UPDATE sedes SET activo = 0 WHERE id_sede = ?',
-                [id]
-            );
-            return result.affectedRows > 0;
-        } catch (error) {
-            throw error;
-        }
-    },
-
-    // Activar sede
-    activate: async (id) => {
-        try {
-            const [result] = await db.query(
-                'UPDATE sedes SET activo = 1 WHERE id_sede = ?',
-                [id]
-            );
-            return result.affectedRows > 0;
-        } catch (error) {
-            throw error;
-        }
-    },
-
-    // Verificar si existe nombre de sede
-    existsByName: async (nombre, excludeId = null) => {
-        try {
-            let query = 'SELECT COUNT(*) as count FROM sedes WHERE nombre_sede = ?';
-            let params = [nombre];
-            
-            if (excludeId) {
-                query += ' AND id_sede != ?';
-                params.push(excludeId);
-            }
-            
-            const [rows] = await db.query(query, params);
-            return rows[0].count > 0;
+            return result.rows;
         } catch (error) {
             throw error;
         }
     }
-};
+
+    // Obtener todas las sedes (incluyendo inactivas)
+    static async getAllAdmin() {
+        try {
+            const result = await db.query(
+                'SELECT * FROM sedes ORDER BY nombre_sede'
+            );
+            return result.rows;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Obtener sede por ID
+    static async getById(id) {
+        try {
+            const result = await db.query(
+                'SELECT * FROM sedes WHERE id_sede = $1',
+                [id]
+            );
+            return result.rows[0];
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Crear nueva sede
+    static async create(sedeData) {
+        try {
+            const { nombre_sede, direccion, telefono } = sedeData;
+
+            const result = await db.query(
+                'INSERT INTO sedes (nombre_sede, direccion, telefono, created_at, activo) VALUES ($1, $2, $3, NOW(), $4) RETURNING id_sede',
+                [nombre_sede, direccion, telefono, 1]
+            );
+
+            return result.rows[0].id_sede;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Actualizar sede
+    static async update(id, sedeData) {
+        try {
+            const { nombre_sede, direccion, telefono } = sedeData;
+
+            const result = await db.query(
+                'UPDATE sedes SET nombre_sede = $1, direccion = $2, telefono = $3 WHERE id_sede = $4 RETURNING id_sede',
+                [nombre_sede, direccion, telefono, id]
+            );
+
+            return result.rowCount > 0;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Eliminar (borrado lógico)
+    static async delete(id) {
+        try {
+            const result = await db.query(
+                'UPDATE sedes SET activo = 0 WHERE id_sede = $1 RETURNING id_sede',
+                [id]
+            );
+            return result.rowCount > 0;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Activar sede
+    static async activate(id) {
+        try {
+            const result = await db.query(
+                'UPDATE sedes SET activo = 1 WHERE id_sede = $1 RETURNING id_sede',
+                [id]
+            );
+            return result.rowCount > 0;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Verificar si existe nombre de sede
+    static async existsByName(nombre, excludeId = null) {
+        try {
+            let query = 'SELECT COUNT(*) as count FROM sedes WHERE nombre_sede = $1';
+            let params = [nombre];
+
+            if (excludeId) {
+                query += ' AND id_sede != $2';
+                params.push(excludeId);
+            }
+
+            const result = await db.query(query, params);
+            return parseInt(result.rows[0].count) > 0;
+        } catch (error) {
+            throw error;
+        }
+    }
+}
 
 module.exports = Sede;

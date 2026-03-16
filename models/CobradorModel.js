@@ -1,62 +1,84 @@
-const db = require('../config/mysql');
+const db = require('../config/database');
 
 class Cobrador {
     static async crear(cobradorData) {
         const { nombre, apellidos, celular, direccion, cedula, id_sede } = cobradorData;
-        // Por defecto activo = 1 al crear
-        const query = 'INSERT INTO cobradores (nombre, apellidos, celular, direccion, cedula, id_sede, activo) VALUES (?, ?, ?, ?, ?, ?, 1)';
-        const values = [nombre, apellidos, celular, direccion, cedula, id_sede];
+
+        const query = `
+            INSERT INTO cobradores (nombre, apellidos, celular, direccion, cedula, id_sede, activo) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING id_cobrador
+        `;
+        const values = [nombre, apellidos, celular, direccion, cedula, id_sede, 1];
 
         try {
-            const [result] = await db.query(query, values);
-            return result.insertId;
+            const result = await db.query(query, values);
+            return result.rows[0].id_cobrador;
         } catch (error) {
             throw error;
         }
     }
 
     static async obtenerTodos(id_sede, includeInactive = false) {
-        let query = 'SELECT * FROM cobradores WHERE id_sede = ?';
+        let query = 'SELECT * FROM cobradores WHERE id_sede = $1';
+        const values = [id_sede];
+
         if (!includeInactive) {
             query += ' AND activo = 1';
         }
         query += ' ORDER BY id_cobrador DESC';
 
-        const [rows] = await db.query(query, [id_sede]);
-        return rows;
+        const result = await db.query(query, values);
+        return result.rows;
     }
 
     static async obtenerPorId(id, id_sede, includeInactive = false) {
-        let query = 'SELECT * FROM cobradores WHERE id_cobrador = ? AND id_sede = ?';
+        let query = 'SELECT * FROM cobradores WHERE id_cobrador = $1 AND id_sede = $2';
+        const values = [id, id_sede];
+
         if (!includeInactive) {
             query += ' AND activo = 1';
         }
-        const [rows] = await db.query(query, [id, id_sede]);
-        return rows[0];
+
+        const result = await db.query(query, values);
+        return result.rows[0];
     }
 
     static async actualizar(id, cobradorData) {
         const { nombre, apellidos, celular, direccion, cedula } = cobradorData;
-        // Nota: No permitimos cambiar el id_sede
-        const query = 'UPDATE cobradores SET nombre = ?, apellidos = ?, celular = ?, direccion = ?, cedula = ? WHERE id_cobrador = ? AND activo = 1';
+
+        const query = `
+            UPDATE cobradores 
+            SET nombre = $1, apellidos = $2, celular = $3, direccion = $4, cedula = $5 
+            WHERE id_cobrador = $6 AND activo = 1
+            RETURNING id_cobrador
+        `;
         const values = [nombre, apellidos, celular, direccion, cedula, id];
 
-        const [result] = await db.query(query, values);
-        return result.affectedRows > 0;
+        const result = await db.query(query, values);
+        return result.rowCount > 0;
     }
 
     static async eliminar(id) {
-        // Borrado lógico: cambiar activo a 0
-        const query = 'UPDATE cobradores SET activo = 0 WHERE id_cobrador = ? AND activo = 1';
-        const [result] = await db.query(query, [id]);
-        return result.affectedRows > 0;
+        const query = `
+            UPDATE cobradores 
+            SET activo = 0 
+            WHERE id_cobrador = $1 AND activo = 1
+            RETURNING id_cobrador
+        `;
+        const result = await db.query(query, [id]);
+        return result.rowCount > 0;
     }
 
     static async reactivar(id, id_sede) {
-        // Para reactivar un cobrador si es necesario
-        const query = 'UPDATE cobradores SET activo = 1 WHERE id_cobrador = ? AND id_sede = ?';
-        const [result] = await db.query(query, [id, id_sede]);
-        return result.affectedRows > 0;
+        const query = `
+            UPDATE cobradores 
+            SET activo = 1 
+            WHERE id_cobrador = $1 AND id_sede = $2
+            RETURNING id_cobrador
+        `;
+        const result = await db.query(query, [id, id_sede]);
+        return result.rowCount > 0;
     }
 
     static async obtenerConEstadisticas(id_sede, includeInactive = false) {
@@ -72,8 +94,10 @@ class Cobrador {
             FROM cobradores cob
             LEFT JOIN clientes c ON cob.id_cobrador = c.id_cobrador
             LEFT JOIN creditos cr ON c.id_cliente = cr.id_cliente
-            WHERE cob.id_sede = ?
+            WHERE cob.id_sede = $1
         `;
+
+        const values = [id_sede];
 
         if (!includeInactive) {
             query += ' AND cob.activo = 1';
@@ -81,47 +105,48 @@ class Cobrador {
 
         query += ' GROUP BY cob.id_cobrador ORDER BY cob.id_cobrador DESC';
 
-        const [rows] = await db.query(query, [id_sede]);
-        return rows;
+        const result = await db.query(query, values);
+        return result.rows;
     }
 
     static async buscarPorCedula(cedula, id_sede, includeInactive = false) {
-        let query = 'SELECT * FROM cobradores WHERE cedula = ? AND id_sede = ?';
+        let query = 'SELECT * FROM cobradores WHERE cedula = $1 AND id_sede = $2';
+        const values = [cedula, id_sede];
+
         if (!includeInactive) {
             query += ' AND activo = 1';
         }
-        const [rows] = await db.query(query, [cedula, id_sede]);
-        return rows[0];
+
+        const result = await db.query(query, values);
+        return result.rows[0];
     }
 
-    // Método adicional: Obtener cobradores con clientes activos
     static async obtenerConClientesActivos(id_sede) {
         const query = `
             SELECT DISTINCT cob.*, 
                 COUNT(DISTINCT c.id_cliente) as total_clientes_activos
             FROM cobradores cob
             INNER JOIN clientes c ON cob.id_cobrador = c.id_cobrador AND c.activo = 1
-            WHERE cob.id_sede = ? AND cob.activo = 1
+            WHERE cob.id_sede = $1 AND cob.activo = 1
             GROUP BY cob.id_cobrador
             ORDER BY cob.nombre ASC
         `;
-        const [rows] = await db.query(query, [id_sede]);
-        return rows;
+        const result = await db.query(query, [id_sede]);
+        return result.rows;
     }
 
-    // Método adicional: Buscar cobradores por nombre (para autocomplete)
     static async buscarPorNombre(termino, id_sede) {
         const query = `
             SELECT id_cobrador, nombre, apellidos, cedula, celular
             FROM cobradores 
-            WHERE id_sede = ? AND activo = 1 
-            AND (nombre LIKE ? OR apellidos LIKE ? OR cedula LIKE ?)
+            WHERE id_sede = $1 AND activo = 1 
+            AND (nombre ILIKE $2 OR apellidos ILIKE $2 OR cedula ILIKE $2)
             ORDER BY nombre ASC
             LIMIT 10
         `;
         const searchTerm = `%${termino}%`;
-        const [rows] = await db.query(query, [id_sede, searchTerm, searchTerm, searchTerm]);
-        return rows;
+        const result = await db.query(query, [id_sede, searchTerm, searchTerm, searchTerm]);
+        return result.rows;
     }
 }
 
