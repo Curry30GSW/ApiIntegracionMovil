@@ -7,19 +7,24 @@ const authMiddleware = require('../middleware/authMiddleware');
 router.use(authMiddleware.isAuthenticated);
 router.use(authMiddleware.getSede);
 
-// Crear crédito
-router.post('/', creditoController.crearCredito);
+/* =========================
+   RUTAS ESPECÍFICAS PRIMERO
+========================= */
 
-// Obtener todos los créditos
-router.get('/', creditoController.obtenerTodos);
-
-// Créditos por cliente
+// Rutas con prefijos fijos (más específicas)
 router.get('/cliente/:id_cliente', creditoController.creditosPorCliente);
-
-// Pagar crédito
+router.get('/cobrador/:id_cobrador', creditoController.obtenerCreditosPorCobrador);
 router.put('/pagar/:id', creditoController.pagarCreditoConFecha);
 
-// Créditos por cobrador
-router.get('/cobrador/:id_cobrador', creditoController.obtenerCreditosPorCobrador);
+/* =========================
+   RUTAS GENÉRICAS DESPUÉS
+========================= */
+
+// Rutas base
+router.get('/', creditoController.obtenerTodos);
+router.post('/', creditoController.crearCredito);
+
+// Si tuvieras ruta por ID específico, iría aquí
+// router.get('/:id', creditoController.obtenerPorId);
 
 module.exports = router;

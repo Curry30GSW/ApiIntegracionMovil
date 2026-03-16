@@ -7,26 +7,17 @@ const authMiddleware = require('../middleware/authMiddleware');
 router.use(authMiddleware.isAuthenticated);
 router.use(authMiddleware.getSede);
 
-// Obtener todos los cobradores
-router.get('/', cobradorController.obtenerCobradores);
-
-// Reactivar cobrador
+// ✅ Rutas ESPECÍFICAS primero
+router.get('/estadisticas/all', cobradorController.obtenerEstadisticas);
 router.patch('/:id/reactivar', cobradorController.reactivarCobrador);
 
-
-// Obtener un cobrador por ID
+// ✅ Luego rutas con parámetros
+router.get('/', cobradorController.obtenerCobradores);
 router.get('/:id', cobradorController.obtenerCobradorPorId);
 
-// Crear nuevo cobrador
+// ✅ Finalmente rutas de acción
 router.post('/', cobradorController.crearCobrador);
-
-// Actualizar cobrador
 router.put('/:id', cobradorController.actualizarCobrador);
-
-// Eliminar cobrador
 router.delete('/:id', cobradorController.eliminarCobrador);
-
-// Obtener estadísticas de cobradores
-router.get('/estadisticas/all', cobradorController.obtenerEstadisticas);
 
 module.exports = router;
