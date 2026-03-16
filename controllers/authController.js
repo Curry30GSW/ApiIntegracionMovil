@@ -6,48 +6,60 @@ const authController = {
         try {
             const { usuario, contraseña } = req.body;
 
-            // Validaciones...
-            const user = await Usuario.findByUsername(usuario);
-            const validPassword = await Usuario.comparePassword(contraseña, user.contraseña);
-
-            if (!user || !validPassword) {
-                return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+            if (!usuario || !contraseña) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Usuario y contraseña requeridos"
+                });
             }
 
-            // Crear token JWT (NO sesión)
-            const token = jwt.sign(
-                {
+            const user = await Usuario.findByUsername(usuario);
+
+            if (!user) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Usuario o contraseña incorrectos"
+                });
+            }
+
+            const validPassword = await Usuario.comparePassword(
+                contraseña,
+                user.contraseña
+            );
+
+            if (!validPassword) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Usuario o contraseña incorrectos"
+                });
+            }
+
+            // Guardar en sesión incluyendo el nombre de la sede
+            req.session.user = {
+                id: user.id_usuario,
+                nombre: user.nombre,
+                rol: user.rol,
+                sede: user.id_sede  // ✅ Solo el ID, no el objeto
+            };
+
+            // Y enviar el nombre por separado si lo necesitas en el frontend
+            return res.json({
+                success: true,
+                user: {
                     id: user.id_usuario,
                     nombre: user.nombre,
                     rol: user.rol,
                     sede: user.id_sede,
-                    nombre_sede: user.nombre_sede
-                },
-                process.env.JWT_SECRET || 'secreto_super_seguro',
-                { expiresIn: '24h' }
-            );
-
-            // Enviar token al frontend
-            req.session.save((err) => {
-                if (err) {
-                    console.error('Error al guardar sesión:', err);
-                    return res.status(500).json({ success: false });
+                    nombre_sede: user.nombre_sede  // ✅ Nombre aparte
                 }
-
-                return res.json({
-                    success: true,
-                    user: {
-                        id: user.id_usuario,
-                        nombre: user.nombre,
-                        rol: user.rol,
-                        sede: user.id_sede,
-                        nombre_sede: user.nombre_sede
-                    }
-                });
             });
+
         } catch (error) {
             console.error("Error login:", error);
-            return res.status(500).json({ success: false, message: "Error en servidor" });
+            return res.status(500).json({
+                success: false,
+                message: "Error en servidor"
+            });
         }
     },
 
