@@ -34,24 +34,35 @@ const authController = {
                 });
             }
 
-            // Guardar en sesión incluyendo el nombre de la sede
+            // Asignar usuario a la sesión
             req.session.user = {
                 id: user.id_usuario,
                 nombre: user.nombre,
                 rol: user.rol,
-                sede: user.id_sede  // ✅ Solo el ID, no el objeto
+                sede: user.id_sede
             };
 
-            // Y enviar el nombre por separado si lo necesitas en el frontend
-            return res.json({
-                success: true,
-                user: {
-                    id: user.id_usuario,
-                    nombre: user.nombre,
-                    rol: user.rol,
-                    sede: user.id_sede,
-                    nombre_sede: user.nombre_sede  // ✅ Nombre aparte
+            // 🔴 ¡LO MÁS IMPORTANTE! Guardar la sesión explícitamente
+            req.session.save((err) => {
+                if (err) {
+                    console.error("Error guardando sesión:", err);
+                    return res.status(500).json({
+                        success: false,
+                        message: "Error al iniciar sesión"
+                    });
                 }
+
+                // ✅ Ahora sí, responder al frontend
+                return res.json({
+                    success: true,
+                    user: {
+                        id: user.id_usuario,
+                        nombre: user.nombre,
+                        rol: user.rol,
+                        sede: user.id_sede,
+                        nombre_sede: user.nombre_sede
+                    }
+                });
             });
 
         } catch (error) {

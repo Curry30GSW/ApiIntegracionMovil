@@ -55,6 +55,17 @@ app.use(session({
    proxy: true // Necesario para Vercel
 }));
 
+// PON ESTO ANTES DE TUS RUTAS
+app.use((req, res, next) => {
+   console.log('==================');
+   console.log('📌 SOLICITUD:', req.method, req.url);
+   console.log('🍪 Cookies recibidas:', req.headers.cookie);
+   console.log('🆔 Session ID:', req.sessionID);
+   console.log('👤 Usuario en sesión:', req.session.user);
+   console.log('==================');
+   next();
+});
+
 /* =========================
    RUTAS API
 ========================= */
