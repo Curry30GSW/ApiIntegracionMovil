@@ -22,6 +22,13 @@ const sedeController = {
     // Obtener todas las sedes (admin)
     getAllAdmin: async (req, res) => {
         try {
+            // Verificar si es admin usando req.user (JWT)
+            if (req.user.rol !== 'admin') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Acceso denegado'
+                });
+            }
 
             const sedes = await Sede.getAllAdmin();
 
@@ -67,11 +74,11 @@ const sedeController = {
     // Crear nueva sede
     create: async (req, res) => {
         try {
-            // Solo admin puede crear sedes
-            if (req.session.user.rol !== 'admin') {
+            // ✅ VERIFICACIÓN CON JWT
+            if (req.user.rol !== 'admin') {
                 return res.status(403).json({
                     success: false,
-                    message: 'Acceso denegado'
+                    message: 'Acceso denegado. Solo administradores pueden crear sedes.'
                 });
             }
 
@@ -119,8 +126,8 @@ const sedeController = {
     // Actualizar sede
     update: async (req, res) => {
         try {
-            // Solo admin puede actualizar sedes
-            if (req.session.user.rol !== 'admin') {
+            // ✅ VERIFICACIÓN CON JWT
+            if (req.user.rol !== 'admin') {
                 return res.status(403).json({
                     success: false,
                     message: 'Acceso denegado'
@@ -189,8 +196,8 @@ const sedeController = {
     // Eliminar (borrado lógico)
     delete: async (req, res) => {
         try {
-            // Solo admin puede eliminar sedes
-            if (req.session.user.rol !== 'admin') {
+            // ✅ VERIFICACIÓN CON JWT
+            if (req.user.rol !== 'admin') {
                 return res.status(403).json({
                     success: false,
                     message: 'Acceso denegado'
@@ -233,8 +240,8 @@ const sedeController = {
     // Activar sede
     activate: async (req, res) => {
         try {
-            // Solo admin puede activar sedes
-            if (req.session.user.rol !== 'admin') {
+            // ✅ VERIFICACIÓN CON JWT
+            if (req.user.rol !== 'admin') {
                 return res.status(403).json({
                     success: false,
                     message: 'Acceso denegado'
