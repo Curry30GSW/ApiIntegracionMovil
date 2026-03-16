@@ -27,6 +27,9 @@ const corsOptions = {
    credentials: true
 };
 
+app.use(cors(corsOptions));
+
+
 /* =========================
    BODY PARSER
 ========================= */
@@ -43,11 +46,12 @@ app.use(session({
    resave: false,
    saveUninitialized: false,
    cookie: {
-      secure: false, // true solo si usas https
+      secure: true, // Siempre true en Vercel (HTTPS)
       httpOnly: true,
-      sameSite: "lax",
-      maxAge: 1000 * 60 * 60 * 24 // 24 horas
-   }
+      sameSite: 'none', // Necesario para cross-site
+      maxAge: 1000 * 60 * 60 * 24
+   },
+   proxy: true // Necesario para Vercel
 }));
 
 /* =========================
