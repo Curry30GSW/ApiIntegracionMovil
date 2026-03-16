@@ -7,16 +7,17 @@ const authJWT = require('../middleware/authJWT');
 // Middleware global para todas las rutas
 router.use(authJWT.verificarToken);
 router.use(authJWT.getSede);
+router.use(authJWT.esAdmin);
 
 // Rutas públicas (usuarios autenticados)
 router.get('/', sedeController.getAll);
 router.get('/:id', sedeController.getById);
 
 // Rutas de administración (solo admin)
-router.get('/admin/all', authMiddleware.isAdmin, sedeController.getAllAdmin);
-router.post('/', authMiddleware.isAdmin, sedeController.create);
-router.put('/:id', authMiddleware.isAdmin, sedeController.update);
-router.delete('/:id', authMiddleware.isAdmin, sedeController.delete);
-router.patch('/:id/activate', authMiddleware.isAdmin, sedeController.activate);
+router.get('/admin/all', authJWT.esAdmin, sedeController.getAllAdmin);
+router.post('/', authJWT.esAdmin, sedeController.create);
+router.put('/:id', authJWT.esAdmin, sedeController.update);
+router.delete('/:id', authJWT.esAdmin, sedeController.delete);
+router.patch('/:id/activate', authJWT.esAdmin, sedeController.activate);
 
 module.exports = router;
