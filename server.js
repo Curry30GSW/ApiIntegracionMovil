@@ -57,11 +57,10 @@ app.use(session({
 /* =========================
    RUTAS API
 ========================= */
-
+app.use('/api', authRoutes);
 app.use('/api/cobradores', cobradorRoutes);
 app.use('/api/clientes', clienteRoutes);
 app.use('/api/creditos', creditoRoutes);
-app.use('/api', authRoutes);
 app.use('/api/sedes', sedeRoutes);
 /* =========================
    RUTA TEST

@@ -10,7 +10,7 @@ class Usuario {
                  FROM usuarios u
                  LEFT JOIN sedes s ON u.id_sede = s.id_sede
                  WHERE u.usuario = $1 AND u.activo = $2`,
-                [usuario, true]
+                [usuario, 1]
             );
 
             return result.rows[0];
