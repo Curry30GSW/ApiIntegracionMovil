@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const cobradorController = require('../controllers/cobradorController');
-const authMiddleware = require('../middleware/authMiddleware');
+const authJWT = require('../middleware/authJWT');
 
-// Middleware global
-router.use(authMiddleware.isAuthenticated);
-router.use(authMiddleware.getSede);
+// Middleware global para todas las rutas
+router.use(authJWT.verificarToken);
+router.use(authJWT.getSede);
 
 // ✅ Rutas ESPECÍFICAS primero
 router.get('/estadisticas/all', cobradorController.obtenerEstadisticas);

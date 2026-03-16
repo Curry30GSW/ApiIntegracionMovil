@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const clienteController = require('../controllers/clienteController');
-const authMiddleware = require('../middleware/authMiddleware');
+const authJWT = require('../middleware/authJWT');
 
 // Middleware global para todas las rutas
-router.use(authMiddleware.isAuthenticated);
-router.use(authMiddleware.getSede);
+router.use(authJWT.verificarToken);
+router.use(authJWT.getSede);
 
 // Obtener todos los clientes
 router.get('/', clienteController.obtenerClientes);

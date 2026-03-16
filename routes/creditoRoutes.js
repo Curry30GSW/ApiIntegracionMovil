@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const creditoController = require('../controllers/creditoController');
-const authMiddleware = require('../middleware/authMiddleware');
+const authJWT = require('../middleware/authJWT');
 
 // Middleware global para todas las rutas
-router.use(authMiddleware.isAuthenticated);
-router.use(authMiddleware.getSede);
+router.use(authJWT.verificarToken);
+router.use(authJWT.getSede);
 
 /* =========================
    RUTAS ESPECÍFICAS PRIMERO

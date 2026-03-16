@@ -3,12 +3,13 @@ const router = express.Router();
 
 const authController = require('../controllers/authController');
 const usuarioController = require('../controllers/usuarioController');
-const authMiddleware = require('../middleware/authMiddleware');
+const authJWT = require('../middleware/authJWT');
+
 
 router.post('/login', authController.login);
 
 router.get('/dashboard',
-    authMiddleware.isAuthenticated,
+    authJWT.verificarToken,
     authController.dashboard
 );
 

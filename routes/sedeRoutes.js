@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
 const sedeController = require('../controllers/sedeController');
 
-// Todas las rutas requieren autenticación
-router.use(authMiddleware.isAuthenticated);
+const authJWT = require('../middleware/authJWT');
+
+// Middleware global para todas las rutas
+router.use(authJWT.verificarToken);
+router.use(authJWT.getSede);
 
 // Rutas públicas (usuarios autenticados)
 router.get('/', sedeController.getAll);
