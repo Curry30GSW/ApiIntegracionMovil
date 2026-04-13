@@ -486,7 +486,7 @@ async function obtenerToken() {
             },
             body: JSON.stringify({
                 usuario: process.env.BOT_USER || 'bot_telegram',
-                password: process.env.BOT_PASSWORD || 'bot777'
+                contraseña: process.env.BOT_PASSWORD || 'bot777'
             })
         });
 
