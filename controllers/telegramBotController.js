@@ -310,7 +310,8 @@ async function procesarConsultarCliente(chatId, session, clienteId) {
             throw new Error(`HTTP error! status: ${clienteResponse.status}`);
         }
 
-        const cliente = JSON.parse(responseText);
+        const raw = JSON.parse(responseText);
+        const cliente = raw.data;
 
         let mensaje = `📋 INFORMACIÓN DEL CLIENTE\n\n` +
             `ID: ${cliente.id_cliente}\n` +
