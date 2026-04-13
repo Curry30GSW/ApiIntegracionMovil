@@ -24,7 +24,7 @@ const corsOptions = {
       'http://localhost:5173',
       'http://localhost:3000'
    ],
-   credentials: true, // Aunque con JWT ya no es estrictamente necesario, lo dejamos por si acaso
+   credentials: true,
    optionsSuccessStatus: 200
 };
 
@@ -41,16 +41,15 @@ app.use(express.urlencoded({ extended: true }));
    RUTAS API
 ========================= */
 
-// IMPORTANTE: authRoutes NO debe tener el middleware de verificación de token
-// porque el login es público
 app.use('/api', authRoutes);
-
-// Estas rutas SI estarán protegidas por el middleware JWT (dentro de cada archivo de rutas)
 app.use('/api/cobradores', cobradorRoutes);
 app.use('/api/clientes', clienteRoutes);
 app.use('/api/creditos', creditoRoutes);
 app.use('/api/sedes', sedeRoutes);
+
+// Webhook de Telegram
 app.post('/telegram-webhook', telegramBotController.handleWebhook);
+app.get('/telegram-test', telegramBotController.testBot);
 
 /* =========================
    RUTA TEST
@@ -61,13 +60,25 @@ app.get('/', (req, res) => {
 });
 
 /* =========================
+   INICIALIZAR WEBHOOK DE TELEGRAM
+========================= */
+
+// Solo configurar webhook en producción (Vercel)
+if (process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production') {
+   console.log('🤖 Configurando webhook de Telegram...');
+   telegramBotController.setWebhook().then(() => {
+      console.log('✅ Webhook configurado');
+   }).catch(err => {
+      console.error('❌ Error configurando webhook:', err);
+   });
+}
+
+/* =========================
    ERROR 404
 ========================= */
 
 app.use((req, res) => {
    res.status(404).json({ error: 'Ruta no encontrada' });
 });
-
-
 
 module.exports = app;

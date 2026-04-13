@@ -2,6 +2,18 @@
 const API_BASE_URL = process.env.API_URL || 'http://localhost:3000/api';
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
+
+// ⬇️ AGREGAR ESTE DEBUG ⬇️
+console.log('🔍 DEBUG - Variables de entorno:');
+console.log('BOT_TOKEN:', BOT_TOKEN ? '✅ Configurado' : '❌ NO CONFIGURADO');
+console.log('WEBHOOK_URL:', process.env.WEBHOOK_URL ? '✅ Configurado' : '❌ NO CONFIGURADO');
+console.log('API_BASE_URL:', API_BASE_URL);
+
+// Validación crítica
+if (!BOT_TOKEN) {
+    console.error('❌ TELEGRAM_BOT_TOKEN no está configurado en las variables de entorno');
+}
+
 // Estados de conversación por usuario
 const userSessions = new Map();
 
@@ -424,7 +436,25 @@ async function setWebhook() {
     }
 }
 
+async function testBot(req, res) {
+    try {
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`);
+        const data = await response.json();
+
+        res.json({
+            bot_info: data,
+            webhook_configured: process.env.WEBHOOK_URL ? 'Yes' : 'No',
+            api_url: API_BASE_URL
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+
+
 module.exports = {
     handleWebhook,
-    setWebhook
+    setWebhook,
+    testBot
 };
