@@ -189,14 +189,14 @@ async function procesarPlazoCredito(chatId, session, plazo) {
     session.data.estado = 'pendiente';
     session.data.id_sede = BOT_SEDE_ID;
     // Asignar cobrador por defecto (puedes cambiarlo según tu lógica)
-    session.data.id_cobrador = 1; // CAMBIAR: deberías tener un cobrador específico para el bot
+    session.data.id_cobrador = 4; // CAMBIAR: deberías tener un cobrador específico para el bot
 
     try {
         const token = await obtenerToken();
 
         console.log('📤 Creando crédito:', session.data);
 
-        const response = await fetch(`${API_BASE_URL}/creditos`, {
+        const response = await fetch(`${API_BASE_URL}/creditos/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -402,7 +402,8 @@ async function procesarTelefonoCliente(chatId, session, telefono) {
 async function procesarDireccionCliente(chatId, session, direccion) {
     session.data.direccion = direccion.trim();
     session.data.id_sede = BOT_SEDE_ID;
-    session.data.id_cobrador = 1; // CAMBIAR: Cobrador por defecto para clientes del bot
+    session.data.id_cobrador = 4;
+    session.data.activo = 1;
 
     try {
         const token = await obtenerToken();
