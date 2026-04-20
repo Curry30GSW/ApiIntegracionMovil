@@ -3,12 +3,6 @@ const API_BASE_URL = process.env.API_URL || 'http://localhost:3000/api';
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const BOT_SEDE_ID = parseInt(process.env.BOT_SEDE_ID) || 1; // ID de sede por defecto para el bot
 
-// ⬇️ DEBUG ⬇️
-console.log('🔍 DEBUG - Variables de entorno:');
-console.log('BOT_TOKEN:', BOT_TOKEN ? '✅ Configurado' : '❌ NO CONFIGURADO');
-console.log('WEBHOOK_URL:', process.env.WEBHOOK_URL ? '✅ Configurado' : '❌ NO CONFIGURADO');
-console.log('API_BASE_URL:', API_BASE_URL);
-console.log('BOT_SEDE_ID:', BOT_SEDE_ID);
 
 if (!BOT_TOKEN) {
     console.error('❌ TELEGRAM_BOT_TOKEN no está configurado en las variables de entorno');
@@ -53,15 +47,15 @@ async function handleMessage(msg) {
             const inlineKeyboard = {
                 inline_keyboard: [
                     [
-                        { text: '➕ Crear Crédito', callback_data: 'crear_credito' },
-                        { text: '💰 Pagar', callback_data: 'pagar' }
+                        { text: 'Crear Crédito', callback_data: 'crear_credito' },
+                        { text: 'Pagar', callback_data: 'pagar' }
                     ],
                     [
-                        { text: '👤 Consultar Cliente', callback_data: 'consultar' },
-                        { text: '📝 Crear Cliente', callback_data: 'crear_cliente' }
+                        { text: 'Consultar Cliente', callback_data: 'consultar' },
+                        { text: 'Crear Cliente', callback_data: 'crear_cliente' }
                     ],
                     [
-                        { text: '❌ Cancelar', callback_data: 'cancelar' }
+                        { text: 'Cancelar', callback_data: 'cancelar' }
                     ]
                 ]
             };
@@ -170,19 +164,33 @@ async function sendMessageWithKeyboard(chatId, text, inlineKeyboard) {
 
 
 async function handleCallbackQuery(callbackQuery) {
+
     const chatId = callbackQuery.message.chat.id;
-    const data = callbackQuery.callback_data; // Esto trae 'crear_credito', 'pagar', etc.
+    const data = callbackQuery.data;
     const callbackQueryId = callbackQuery.id;
 
-    // Responder el callback para quitar el reloj de carga en el botón
+    console.log('📌 Data recibida:', data);
+    console.log('📌 Tipo de data:', typeof data);
+
+    // Responder el callback para quitar el reloj de carga
     try {
         await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ callback_query_id: callbackQueryId })
+            body: JSON.stringify({
+                callback_query_id: callbackQueryId,
+                text: "Procesando..."
+            })
         });
     } catch (error) {
         console.error('Error respondiendo callback:', error);
+    }
+
+    // Si data es undefined o null, mostrar error
+    if (!data) {
+        console.error('❌ Error: callback_data es undefined');
+        await sendMessage(chatId, '❌ Error: El botón no tiene acción definida. Por favor usa /start nuevamente.');
+        return;
     }
 
     // Inicializar sesión si no existe
@@ -212,9 +220,9 @@ async function handleCallbackQuery(callbackQuery) {
             break;
         default:
             console.log('Callback no reconocido:', data);
+            await sendMessage(chatId, `Opción no reconocida: "${data}". Usa /start para reiniciar.`);
     }
 }
-
 // ========================================
 // FLUJO: CREAR CRÉDITO
 // ========================================
