@@ -601,20 +601,32 @@ async function obtenerToken() {
 async function handleWebhook(req, res) {
     try {
         const update = req.body;
-        console.log('📨 Webhook recibido:', JSON.stringify(update, null, 2));
 
-        // Si es un callback_query (botón presionado)
+        // LOG MUY DETALLADO
+        console.log('📨 HEADERS:', req.headers);
+        console.log('📨 BODY COMPLETO:', JSON.stringify(update, null, 2));
+
+        // Verificar si tiene callback_query
         if (update.callback_query) {
+            console.log('🎯 CALLBACK QUERY ENCONTRADO!');
+            console.log('Datos del callback:', update.callback_query.data);
+            console.log('ID del callback:', update.callback_query.id);
             await handleCallbackQuery(update.callback_query);
         }
-        // Si es un mensaje normal
         else if (update.message) {
+            console.log('💬 MENSAJE NORMAL');
+            console.log('Texto:', update.message.text);
             await handleMessage(update.message);
+        }
+        else {
+            console.log('⚠️ Update sin message ni callback_query');
+            console.log('Claves recibidas:', Object.keys(update));
         }
 
         res.sendStatus(200);
     } catch (error) {
         console.error('❌ Error en webhook:', error);
+        console.error('Stack:', error.stack);
         res.sendStatus(500);
     }
 }
