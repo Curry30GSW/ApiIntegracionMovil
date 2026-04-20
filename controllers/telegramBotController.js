@@ -437,10 +437,35 @@ async function procesarConsultarCliente(chatId, session, clienteId) {
                 if (creditos && creditos.length > 0) {
                     mensaje += `\n💰 CRÉDITOS (${creditos.length}):\n`;
                     creditos.forEach(credito => {
-                        mensaje += `\n- ID: ${credito.id_credito}\n`;
-                        mensaje += `  Monto: $${credito.monto_por_pagar}\n`;
-                        mensaje += `  Estado: ${credito.estado}\n`;
-                        mensaje += `  Fecha pago: ${credito.fecha_pago}\n`;
+                        // Formatear monto con separadores de miles y 2 decimales
+                        const montoFormateado = new Intl.NumberFormat('es-CO', {
+                            style: 'currency',
+                            currency: 'COP',
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                        }).format(credito.monto_por_pagar);
+
+                        // Formatear fecha (de ISO a DD/MM/YYYY)
+                        let fechaFormateada = 'No especificada';
+                        if (credito.fecha_pago) {
+                            const fecha = new Date(credito.fecha_pago);
+                            if (!isNaN(fecha.getTime())) {
+                                fechaFormateada = fecha.toLocaleDateString('es-CO', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric'
+                                });
+                            }
+                        }
+
+                        // Emoji según estado
+                        const estadoEmoji = credito.estado === 'pagado' ? '✅' : '⏳';
+                        const estadoTexto = credito.estado === 'pagado' ? 'Pagado' : 'Pendiente';
+
+                        mensaje += `\n• ID: ${credito.id_credito}\n`;
+                        mensaje += `  ${estadoEmoji} Estado: ${estadoTexto}\n`;
+                        mensaje += `  💰 Monto: ${montoFormateado}\n`;
+                        mensaje += `  📅 Fecha pago: ${fechaFormateada}\n`;
                     });
                 } else {
                     mensaje += `\n💰 No tiene créditos.`;
