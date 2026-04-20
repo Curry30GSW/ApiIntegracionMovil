@@ -50,7 +50,23 @@ async function handleMessage(msg) {
     // Manejar comandos
     if (text.startsWith('/')) {
         if (text === '/start') {
-            await sendMessage(chatId, commands['/start']);
+            const inlineKeyboard = {
+                inline_keyboard: [
+                    [
+                        { text: '➕ Crear Crédito', callback_data: 'crear_credito' },
+                        { text: '💰 Pagar', callback_data: 'pagar' }
+                    ],
+                    [
+                        { text: '👤 Consultar Cliente', callback_data: 'consultar' },
+                        { text: '📝 Crear Cliente', callback_data: 'crear_cliente' }
+                    ],
+                    [
+                        { text: '❌ Cancelar', callback_data: 'cancelar' }
+                    ]
+                ]
+            };
+
+            await sendMessageWithKeyboard(chatId, 'Bienvenido al bot de Gota a Gota. Selecciona una opción:', inlineKeyboard);
             session.state = 'idle';
         }
         else if (text === '/cancelar') {
@@ -118,6 +134,84 @@ async function handleMessage(msg) {
         console.error('Error procesando mensaje:', error);
         await sendMessage(chatId, 'Ocurrió un error. Por favor, intenta de nuevo.');
         session.state = 'idle';
+    }
+}
+
+async function sendMessageWithKeyboard(chatId, text, inlineKeyboard) {
+    try {
+        console.log('📤 Enviando mensaje con teclado a', chatId);
+
+        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: text,
+                reply_markup: inlineKeyboard
+            })
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            console.error('❌ Error de Telegram:', responseData);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        console.log('✅ Mensaje con teclado enviado correctamente');
+    } catch (error) {
+        console.error('❌ Error enviando mensaje a Telegram:', error.message);
+    }
+}
+
+
+async function handleCallbackQuery(callbackQuery) {
+    const chatId = callbackQuery.message.chat.id;
+    const data = callbackQuery.callback_data; // Esto trae 'crear_credito', 'pagar', etc.
+    const callbackQueryId = callbackQuery.id;
+
+    // Responder el callback para quitar el reloj de carga en el botón
+    try {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ callback_query_id: callbackQueryId })
+        });
+    } catch (error) {
+        console.error('Error respondiendo callback:', error);
+    }
+
+    // Inicializar sesión si no existe
+    if (!userSessions.has(chatId)) {
+        userSessions.set(chatId, { state: 'idle', data: {} });
+    }
+    const session = userSessions.get(chatId);
+
+    // Manejar según qué botón presionaron
+    switch (data) {
+        case 'crear_credito':
+            await iniciarCrearCredito(chatId, session);
+            break;
+        case 'pagar':
+            await iniciarPagar(chatId, session);
+            break;
+        case 'consultar':
+            await iniciarConsultarCliente(chatId, session);
+            break;
+        case 'crear_cliente':
+            await iniciarCrearCliente(chatId, session);
+            break;
+        case 'cancelar':
+            session.state = 'idle';
+            session.data = {};
+            await sendMessage(chatId, 'Operación cancelada.');
+            break;
+        default:
+            console.log('Callback no reconocido:', data);
     }
 }
 
@@ -509,7 +603,12 @@ async function handleWebhook(req, res) {
         const update = req.body;
         console.log('📨 Webhook recibido:', JSON.stringify(update, null, 2));
 
-        if (update.message) {
+        // Si es un callback_query (botón presionado)
+        if (update.callback_query) {
+            await handleCallbackQuery(update.callback_query);
+        }
+        // Si es un mensaje normal
+        else if (update.message) {
             await handleMessage(update.message);
         }
 
