@@ -1,5 +1,8 @@
 const mysql = require('mysql2');
-require('dotenv').config();
+
+if (!process.env.VERCEL) {
+    require('dotenv').config();
+}
 
 const mysqlPool = mysql.createPool({
     host: process.env.MYSQL_HOST,

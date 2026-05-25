@@ -3,9 +3,11 @@ const path = require('path');
 const OpenAI = require('openai');
 const db = require('../config/database');
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
+const openai = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'tu_api_key'
+    ? new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+    })
+    : null;
 
 const EMBEDDING_MODEL = 'text-embedding-3-small';
 const CHAT_MODEL = 'gpt-4.1-mini';
@@ -81,7 +83,7 @@ async function ensureKnowledgeSchema() {
 }
 
 async function getEmbedding(text) {
-    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'tu_api_key') {
+    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'tu_api_key' || !openai) {
         throw new Error('OPENAI_API_KEY no está configurada');
     }
 

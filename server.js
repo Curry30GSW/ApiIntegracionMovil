@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+
+if (!process.env.VERCEL) {
+   require('dotenv').config();
+}
 
 const cobradorRoutes = require('./routes/cobradorRoutes');
 const clienteRoutes = require('./routes/clienteRoutes');
