@@ -1,8 +1,9 @@
 // Configuración
 const API_BASE_URL = process.env.API_URL || 'http://localhost:3000/api';
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const BOT_SEDE_ID = parseInt(process.env.BOT_SEDE_ID) || 1; // ID de sede por defecto para el bot
-
+const BOT_SEDE_ID = parseInt(String(process.env.BOT_SEDE_ID || '1').trim(), 10) || 1; // ID de sede por defecto para el bot
+const { detectarIntento } = require('../services/ai.service');
+const botDataService = require('../services/botDataService');
 
 if (!BOT_TOKEN) {
     console.error('❌ TELEGRAM_BOT_TOKEN no está configurado en las variables de entorno');
@@ -18,12 +19,14 @@ const commands = {
         '/pagar - Registrar un pago\n' +
         '/consultarcliente - Consultar información de un cliente\n' +
         '/crearcliente - Crear un nuevo cliente\n' +
+        '/cargar_kb - Cargar el documento de la base de conocimiento\n' +
         '/cancelar - Cancelar operación actual',
     '/cancelar': 'Operación cancelada.',
     '/crearcredito': 'crear_credito',
     '/pagar': 'pagar',
     '/consultarcliente': 'consultar_cliente',
-    '/crearcliente': 'crear_cliente'
+    '/crearcliente': 'crear_cliente',
+    '/cargar_kb': 'cargar_kb'
 };
 
 // Función principal para manejar mensajes
@@ -78,6 +81,8 @@ async function handleMessage(msg) {
                 await iniciarConsultarCliente(chatId, session);
             } else if (action === 'crear_cliente') {
                 await iniciarCrearCliente(chatId, session);
+            } else if (action === 'cargar_kb') {
+                await cargarBaseConocimiento(chatId);
             }
         } else {
             await sendMessage(chatId, 'Comando no reconocido. Usa /start para ver los comandos disponibles.');
@@ -87,6 +92,44 @@ async function handleMessage(msg) {
 
     // Manejar respuestas según el estado
     try {
+        if (session.state === 'idle' && !text.startsWith('/')) {
+
+            const resultadoIA = await detectarIntento(text);
+
+            console.log('🧠 IA:', resultadoIA);
+
+            switch (resultadoIA.intent) {
+
+                case 'consultar_deuda':
+                    await consultarDeudaPorNombre(
+                        chatId,
+                        resultadoIA.cliente
+                    );
+                    return;
+
+                case 'clientes_vencidos':
+                    await consultarClientesVencidos(chatId);
+                    return;
+
+                case 'clientes_pendientes':
+                    await consultarClientesPendientes(chatId);
+                    return;
+
+                case 'buscar_cliente':
+                    await buscarClientePorNombre(
+                        chatId,
+                        resultadoIA.cliente
+                    );
+                    return;
+
+                case 'knowledge_query':
+                    await consultarBaseConocimiento(
+                        chatId,
+                        resultadoIA.question || text
+                    );
+                    return;
+            }
+        }
         switch (session.state) {
             case 'crear_credito_cliente':
                 await procesarClienteCredito(chatId, session, text);
@@ -221,6 +264,158 @@ async function handleCallbackQuery(callbackQuery) {
         default:
             console.log('Callback no reconocido:', data);
             await sendMessage(chatId, `Opción no reconocida: "${data}". Usa /start para reiniciar.`);
+    }
+}
+
+async function buscarClientePorNombre(chatId, nombre) {
+    try {
+        const clientes = await botDataService.buscarClientePorNombre(nombre, BOT_SEDE_ID);
+
+        if (!clientes.length) {
+            await sendMessage(chatId, `No encontré clientes con el nombre "${nombre}".`);
+            return;
+        }
+
+        let mensaje = `🔎 Clientes encontrados para "${nombre}":\n\n`;
+
+        clientes.forEach((cliente) => {
+            mensaje += `• ID: ${cliente.id_cliente}\n`;
+            mensaje += `  Nombre: ${cliente.nombre} ${cliente.apellidos || ''}\n`;
+            mensaje += `  Cédula: ${cliente.cedula || 'No registrada'}\n`;
+            mensaje += `  Celular: ${cliente.celular || 'No registrado'}\n`;
+            mensaje += `  Activo: ${cliente.activo ? 'Sí' : 'No'}\n\n`;
+        });
+
+        await sendMessage(chatId, mensaje.trim());
+    } catch (error) {
+        console.error('❌ Error buscando cliente por nombre:', error.message);
+        await sendMessage(chatId, '❌ No pude buscar el cliente en este momento.');
+    }
+}
+
+async function consultarDeudaPorNombre(chatId, nombre) {
+    try {
+        const resultados = await botDataService.consultarDeudaPorNombre(nombre, BOT_SEDE_ID);
+
+        if (!resultados.length) {
+            await sendMessage(chatId, `No encontré un cliente llamado "${nombre}" para consultar la deuda.`);
+            return;
+        }
+
+        const cliente = resultados[0];
+        const deudaFormateada = new Intl.NumberFormat('es-CO', {
+            style: 'currency',
+            currency: 'COP',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(Number(cliente.deuda_total || 0));
+
+        await sendMessage(
+            chatId,
+            `💰 Deuda de ${cliente.nombre} ${cliente.apellidos || ''}: ${deudaFormateada}\n` +
+            `🧾 Créditos pendientes: ${cliente.creditos_pendientes || 0}`
+        );
+    } catch (error) {
+        console.error('❌ Error consultando deuda:', error.message);
+        await sendMessage(chatId, '❌ No pude consultar la deuda en este momento.');
+    }
+}
+
+async function consultarClientesPendientes(chatId) {
+    try {
+        const pendientes = await botDataService.consultarClientesPendientes(BOT_SEDE_ID);
+
+        if (!pendientes.length) {
+            await sendMessage(chatId, '✅ No hay clientes con créditos pendientes en esta sede.');
+            return;
+        }
+
+        let mensaje = '⏳ Clientes con créditos pendientes:\n\n';
+
+        pendientes.forEach((credito) => {
+            mensaje += `• ${credito.nombre} ${credito.apellidos || ''}\n`;
+            mensaje += `  ID crédito: ${credito.id_credito}\n`;
+            mensaje += `  Estado: ${credito.estado}\n`;
+            mensaje += `  Fecha de pago: ${credito.fecha_pago || 'No registrada'}\n`;
+            mensaje += `  Monto: ${new Intl.NumberFormat('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(Number(credito.monto_por_pagar || 0))}\n\n`;
+        });
+
+        await sendMessage(chatId, mensaje.trim());
+    } catch (error) {
+        console.error('❌ Error consultando clientes pendientes:', error.message);
+        await sendMessage(chatId, '❌ No pude consultar los clientes pendientes.');
+    }
+}
+
+async function consultarBaseConocimiento(chatId, pregunta) {
+    try {
+        const token = await obtenerToken();
+
+        const response = await fetch(`${API_BASE_URL}/knowledge/query`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ question: pregunta })
+        });
+
+        const responseText = await response.text();
+
+        if (!response.ok) {
+            throw new Error(responseText);
+        }
+
+        const data = JSON.parse(responseText);
+        let mensaje = `🧠 ${data.answer}`;
+
+        if (data.sources && data.sources.length) {
+            mensaje += `\n\n📚 Fuentes:\n`;
+            data.sources.forEach((source) => {
+                mensaje += `• ${source.document_name} (chunk ${source.chunk_index + 1})\n`;
+            });
+        }
+
+        await sendMessage(chatId, mensaje.trim());
+    } catch (error) {
+        console.error('❌ Error consultando base de conocimiento:', error.message);
+        await sendMessage(chatId, '❌ No pude consultar la base de conocimiento.');
+    }
+}
+
+async function cargarBaseConocimiento(chatId) {
+    try {
+        const token = await obtenerToken();
+
+        const response = await fetch(`${API_BASE_URL}/knowledge/load-default`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const responseText = await response.text();
+
+        if (!response.ok) {
+            throw new Error(responseText);
+        }
+
+        const data = JSON.parse(responseText);
+
+        await sendMessage(
+            chatId,
+            `✅ Base de conocimiento cargada: ${data.data.document_name}\n` +
+            `📄 Chunks indexados: ${data.data.chunks}`
+        );
+    } catch (error) {
+        console.error('❌ Error cargando base de conocimiento:', error.message);
+        await sendMessage(chatId, '❌ No pude cargar la base de conocimiento.');
     }
 }
 // ========================================

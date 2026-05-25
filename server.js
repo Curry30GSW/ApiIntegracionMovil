@@ -7,6 +7,7 @@ const clienteRoutes = require('./routes/clienteRoutes');
 const creditoRoutes = require('./routes/creditoRoutes');
 const authRoutes = require('./routes/usuarioRoutes');
 const sedeRoutes = require('./routes/sedeRoutes');
+const knowledgeRoutes = require('./routes/knowledgeRoutes');
 const telegramBotController = require('./controllers/telegramBotController');
 
 const app = express();
@@ -46,6 +47,7 @@ app.use('/api/cobradores', cobradorRoutes);
 app.use('/api/clientes', clienteRoutes);
 app.use('/api/creditos', creditoRoutes);
 app.use('/api/sedes', sedeRoutes);
+app.use('/api/knowledge', knowledgeRoutes);
 
 // Webhook de Telegram
 app.post('/telegram-webhook', telegramBotController.handleWebhook);
@@ -80,5 +82,11 @@ if (process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'product
 app.use((req, res) => {
    res.status(404).json({ error: 'Ruta no encontrada' });
 });
+
+if (require.main === module) {
+   app.listen(PORT, () => {
+      console.log(`Servidor escuchando en el puerto ${PORT}`);
+   });
+}
 
 module.exports = app;

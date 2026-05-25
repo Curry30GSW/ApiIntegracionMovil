@@ -1,0 +1,7 @@
+Política de cobranza:
+- Los clientes con créditos pendientes o vencidos deben ser contactados en el siguiente día hábil.
+- Juan Pérez tiene una deuda pendiente de 150000 pesos.
+- Carlos García debe 320000 pesos y su pago está vencido.
+- La sede principal atiende las consultas de clientes y también las preguntas sobre los documentos de cobranzas.
+- Si un cliente no aparece en la base de datos, se debe indicar que no se encontró el registro.
+- El bot puede responder preguntas del documento usando la base de conocimiento embebida en Supabase.
